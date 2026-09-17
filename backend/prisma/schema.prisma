@@ -1,0 +1,55 @@
+// Prisma schema for the Quiz Builder API.
+// SQLite is the default so the project runs with zero external setup.
+// To use PostgreSQL: set provider = "postgresql" and point DATABASE_URL at your instance.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Quiz {
+  id        String     @id @default(uuid())
+  title     String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  questions Question[]
+
+  @@index([createdAt])
+}
+
+/// `type` is one of: BOOLEAN | INPUT | CHECKBOX.
+/// SQLite has no native enums, so the value is validated with Zod at the API boundary.
+model Question {
+  id       String @id @default(uuid())
+  quizId   String
+  type     String
+  text     String
+  position Int
+
+  /// Expected answer for BOOLEAN questions.
+  correctBoolean Boolean?
+  /// Expected answer for INPUT questions.
+  correctText String?
+
+  quiz    Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  options Option[]
+
+  @@index([quizId])
+}
+
+/// Choices for CHECKBOX questions. Several may be marked correct.
+model Option {
+  id         String  @id @default(uuid())
+  questionId String
+  text       String
+  isCorrect  Boolean @default(false)
+  position   Int
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+}
